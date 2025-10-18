@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.min.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=25d50b009bf3e9e4b2304f38908b92e9"></script>
+    <style>
+        body { text-align: center; }
+        #map { width: 97%; height: 550px; margin: auto; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+    <script>
+        var mapContainer = document.getElementById('map'),
+            mapOption = { center: new kakao.maps.LatLng(37.61084428792267, 126.99616573824592), level: 1 };
+        var map = new kakao.maps.Map(mapContainer, mapOption);
+        var socket = io();
+        var currentMarker = null;
+        var lastPosition = null; // 마지막 위치 저장 변수
+
+        socket.on('connect', function() {
+            setInterval(() => {
+                socket.emit('request_location');
+            }, 1000);  // 5초마다 위치 요청
+        });
+
+        socket.on('update_location', function(data) {
+            var newPosition = new kakao.maps.LatLng(data.lat, data.lon);
+
+            if (currentMarker) {
+                currentMarker.setMap(null); // 이전 마커 제거
+            }
+
+            currentMarker = new kakao.maps.Marker({
+                position: newPosition,
+                map: map
+            });
+
+            if (lastPosition) {
+                var pathLine = new kakao.maps.Polyline({
+                    path: [lastPosition, newPosition],
+                    strokeWeight: 3,
+                    strokeColor: '#db4040',
+                    strokeOpacity: 0.5,
+                    strokeStyle: 'dash',
+                    map: map
+                });
+            }
+
+            lastPosition = newPosition; // 현재 위치를 마지막 위치로 저장
+        });
+    </script>
+</body>
+</html>
